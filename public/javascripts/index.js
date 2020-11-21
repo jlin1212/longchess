@@ -99,6 +99,7 @@ class Piece {
         this.elem = elem;
         this.type = type;
         this.side = side;
+        this.index = 0;
         this.captured = false;
         this.moved = false;
         this.position = [0,0];
@@ -205,6 +206,10 @@ function getPiece(elem) {
     return PIECES[elem.dataset['idx']];
 }
 
+function getSquarePiece(elem) {
+    return PIECES[elem.dataset['piece']];
+}
+
 function getSquare(row, col) {
     return $($('#board .row')[row]).children('.square')[col];
 }
@@ -288,7 +293,11 @@ function movePiece(piece, elem) {
     if (piece == null) return;
     if (elem.dataset['row'] != piece.position[0] || elem.dataset['col'] != piece.position[1]) piece.moved = true;
     if (eval(elem.dataset.occupied) && eval(elem.dataset.side) != piece.side)
-        PIECES[elem.dataset.piece].hide();
+        getSquarePiece(elem).hide();
     piece.setPosition(elem.dataset['row'], elem.dataset['col'], true);
     endMove();
+}
+
+function makeMove(fr, fc, tr, tc) {
+    movePiece(getSquarePiece(getSquare(fr, fc)), getSquare(tr, tc));
 }
