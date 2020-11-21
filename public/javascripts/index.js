@@ -81,10 +81,12 @@ $(function() {
 
     // set available squares on click
     $('.piece').not('.other').mousedown(function() {
-        let piece = getPiece(this);
-        CURR_PIECE = piece;
-        clearAvailable();
-        piece.showAvailable();
+        if (!$(this).hasClass('ui-draggable-disabled')) {
+            let piece = getPiece(this);
+            CURR_PIECE = piece;
+            clearAvailable();
+            piece.showAvailable();
+        }
     });
 
     // square click listeners
@@ -92,7 +94,9 @@ $(function() {
         if ($(this).hasClass('available')) {
             movePiece(CURR_PIECE, this);
         } else clearAvailable();
-    });    
+    });
+    
+    $(window).resize(() => refreshPositions());
 });
 
 class Piece {
@@ -131,6 +135,10 @@ class Piece {
         getSquare(row, col).dataset['piece'] = this.index;
         getSquare(row, col).dataset['side'] = this.side;
         this.position = [parseInt(row), parseInt(col)];
+    }
+
+    toPosition() {
+        this.setPosition(this.position[0], this.position[1]);
     }
 
     hide() {
@@ -324,6 +332,10 @@ function getDirectionalPiece(row, col, dr, dc, num) {
         i++;
     }
     return null;
+}
+
+function refreshPositions() {
+    PIECES.forEach((piece) => piece.toPosition());
 }
 
 function canAccess(square, side) {
