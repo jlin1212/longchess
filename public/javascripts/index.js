@@ -54,6 +54,7 @@ $(function() {
             for (var j = 0; j < 8; j++) {
                 $(document.body).append(`<div class='piece' data-type='${pieceCols[j]}' data-idx=${PIECES.length}>${pieceCols[j]}</div>`);
                 let piece = new Piece($('.piece:last-of-type'), pieceCols[j], s);
+                piece.index = PIECES.length;
                 PIECES.push(piece);
                 (s == 0) ? BLACK.push(piece) : WHITE.push(piece);
                 piece.sprite();
@@ -69,10 +70,8 @@ $(function() {
             return $(this).hasClass('available');
         },
         drop: function(_, ui) {
-            endMove();
             let piece = getPiece(ui.draggable[0]);
-            if (this.dataset['row'] != piece.position[0] || this.dataset['col'] != piece.position[1]) piece.moved = true;
-            piece.setPosition(this.dataset['row'], this.dataset['col']);
+            movePiece(piece, this);
         }
     });
 
@@ -80,7 +79,7 @@ $(function() {
     $('.piece').not('.other').draggable({ revert: 'invalid', revertDuration: 80 });
 
     // set available squares on click
-    $('.piece').not('other').mousedown(function() {
+    $('.piece').not('.other').mousedown(function() {
         let piece = getPiece(this);
         CURR_PIECE = piece;
         clearAvailable();
@@ -90,10 +89,7 @@ $(function() {
     // square click listeners
     $('.square').click(function() {
         if ($(this).hasClass('available')) {
-            if (CURR_PIECE == null) return;
-            if (this.dataset['row'] != CURR_PIECE.position[0] || this.dataset['col'] != CURR_PIECE.position[1]) CURR_PIECE.moved = true;
-            CURR_PIECE.setPosition(this.dataset['row'], this.dataset['col'], true);
-            endMove();
+            movePiece(CURR_PIECE, this);
         } else clearAvailable();
     });    
 });
@@ -129,8 +125,13 @@ class Piece {
         }
         
         getSquare(row, col).dataset['occupied'] = true;
+        getSquare(row, col).dataset['piece'] = this.index;
         getSquare(row, col).dataset['side'] = this.side;
         this.position = [parseInt(row), parseInt(col)];
+    }
+
+    hide() {
+        this.elem.hide();
     }
 
     moveable() {
@@ -161,6 +162,7 @@ class Piece {
             case 'k':
                 available.push(...getDiagonals(this.position[0], this.position[1], 1, this.side));
                 available.push(...getRanksFiles(this.position[0], this.position[1], 1, this.side));
+                if (!this.moved) getCastle(this.position[0], this.position[1]);
                 break;
         }
 
@@ -213,7 +215,10 @@ function getForward(row, col, num, side) {
     let result = [];
     for (var i = 0; i < num; i++) {
         let idx = row + coeff * (i + 1);
-        if (idx < ROWS && idx >= 0) result.push(getSquare(idx, col));
+        if (idx < ROWS && idx >= 0) {
+            let square = getSquare(idx, col)
+            if (square && !eval(square.dataset.occupied)) result.push(square);
+        }
         else break;
     }
     return result;
@@ -242,8 +247,8 @@ function getDirectionalFunction(row, col, num, fx, fy, side) {
             let ic = col + cy * (i + 1);
             if (ir >= ROWS || ir < 0 || ic >= 8 || ic < 0) break;
             let square = getSquare(ir, ic);
+            if (canAccess(square, side)) result.push(square);
             if (eval(square.dataset.occupied)) break;
-            result.push(square);
         }
     }
 
@@ -258,7 +263,7 @@ function getDiagonals(row, col, num, side) {
     return getDirectionalFunction(row, col, num, d => Math.pow(-1, Math.floor(d / 2)), d => Math.pow(-1, d % 2), side);
 }
 
-function getKnightMoves(row, col) {
+function getKnightMoves(row, col, side) {
     let result = [];
     
     for (var d = 0; d < 4; d++) {
@@ -268,7 +273,7 @@ function getKnightMoves(row, col) {
         let dy = (cy == 0) ? 1 : 0;
         for (var i = 0; i < 2; i++) {
             let square = getSquare(row + cx * 2 + Math.pow(-1, i) * dx, col + cy * 2 + Math.pow(-1, i) * dy)
-            if (square && !eval(square.dataset.occupied)) result.push(square);
+            if (square && canAccess(square, side)) result.push(square);
         }
     }
 
@@ -276,5 +281,14 @@ function getKnightMoves(row, col) {
 }
 
 function canAccess(square, side) {
-    return eval(square.dataset.occupied) ? eval(square.dataset.side) != side : true;
+    return eval(square.dataset.occupied) ? (eval(square.dataset.side) != side) : true;
+}
+
+function movePiece(piece, elem) {
+    if (piece == null) return;
+    if (elem.dataset['row'] != piece.position[0] || elem.dataset['col'] != piece.position[1]) piece.moved = true;
+    if (eval(elem.dataset.occupied) && eval(elem.dataset.side) != piece.side)
+        PIECES[elem.dataset.piece].hide();
+    piece.setPosition(elem.dataset['row'], elem.dataset['col'], true);
+    endMove();
 }

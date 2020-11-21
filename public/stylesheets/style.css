@@ -32,6 +32,10 @@ body {
   cursor: default;
 }
 
+.piece.other {
+  pointer-events: none;
+}
+
 .row {
   display: flex;
   justify-content: center;
