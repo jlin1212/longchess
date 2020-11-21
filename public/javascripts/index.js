@@ -22,6 +22,7 @@ WHITE = []
 
 CURR_SIDE = 1
 CURR_MOVE = 1
+CURR_PLY = 0
 CURR_PIECE = null
 
 $(function() {
@@ -99,11 +100,12 @@ class Piece {
         this.elem = elem;
         this.type = type;
         this.side = side;
+        this.leap = -100;
         this.index = 0;
         this.captured = false;
         this.moved = false;
-        this.position = [0,0];
-        this.setPosition(0, 0);
+        this.position = [4,4];
+        this.setPosition(4,4);
     }
 
     setPosition(row, col, animate) {
@@ -163,7 +165,7 @@ class Piece {
             case 'k':
                 available.push(...getDiagonals(this.position[0], this.position[1], 1, this.side));
                 available.push(...getRanksFiles(this.position[0], this.position[1], 1, this.side));
-                if (!this.moved) getCastle(this.position[0], this.position[1]);
+                if (!this.moved) available.push(...getCastle(this.position[0], this.position[1], this.side));
                 break;
         }
 
@@ -190,10 +192,12 @@ function setDragging(bool) {
     else $('.piece').not('.other').draggable('disable');
 }
 
-function endMove() {
+function endMove(noply) {
+    if (!noply) CURR_PLY++;
     CURR_MOVE = 1 - CURR_MOVE;
     CURR_PIECE = null;
     clearAvailable();
+    console.log(CURR_PLY);
 }
 
 function getCenter(row, col) {
@@ -212,6 +216,10 @@ function getSquarePiece(elem) {
 
 function getSquare(row, col) {
     return $($('#board .row')[row]).children('.square')[col];
+}
+
+function getRowCol(elem) {
+    return [parseInt(elem.dataset.row), parseInt(elem.dataset.col)];
 }
 
 function getForward(row, col, num, side) {
@@ -233,10 +241,17 @@ function getPawnCaptures(row, col, side) {
     let coeff = (side == 0) ? 1 : -1;
     let result = [];
     for (var i = 0; i < 2; i++) {
+        // check diagonals
         let dx = Math.pow(-1, i);
         let dy = coeff;
         let square = getSquare(row + dy, col + dx);
         if (square && eval(square.dataset.occupied) && square.dataset.side != side) result.push(square);
+
+        // check either side for en passant
+        let next = getSquare(row, col + dx);
+        let piece = next ? getSquarePiece(next) : undefined;
+        if (piece && piece.side != side && piece.type.toLowerCase() == 'p' && piece.leap == CURR_PLY - 1)
+            result.push(square);
     }
     return result;
 }
@@ -285,17 +300,70 @@ function getKnightMoves(row, col, side) {
     return result;
 }
 
+function getCastle(row, col, side) {
+    let result = [];
+    for (let d = 0; d < 2; d++) {
+        let dc = Math.pow(-1, d);
+        for (let i = col + dc; i >= 0 && i < 8; i += dc) {
+            let square = getSquare(row, i);
+            if (eval(square.dataset.occupied) && i != 0 && i != 7) break;
+            let piece = getSquarePiece(square);
+            if (!piece.moved && piece.type.toLowerCase() == 'r')
+                result.push(getSquare(row, col + dc * 2));
+        }
+    }
+    return result;
+}
+
+function getDirectionalPiece(row, col, dr, dc, num) {
+    let i = 0;
+    while (!num || i < num) {
+        let square = getSquare(row + dr * i, col + dc * i);
+        if (square === undefined) break;
+        if (eval(square.dataset.occupied)) return getSquarePiece(square);
+        i++;
+    }
+    return null;
+}
+
 function canAccess(square, side) {
     return eval(square.dataset.occupied) ? (eval(square.dataset.side) != side) : true;
 }
 
-function movePiece(piece, elem) {
+function movePiece(piece, elem, noply, nolight) {
     if (piece == null) return;
-    if (elem.dataset['row'] != piece.position[0] || elem.dataset['col'] != piece.position[1]) piece.moved = true;
+
+    // highlight from-to
+    if (!nolight) {
+        $('.square').removeClass('highlight');
+        $(getSquare(piece.position[0], piece.position[1])).addClass('highlight');
+        $(elem).addClass('highlight');
+    }
+
+    let dest = getRowCol(elem);
+    let dr = piece.position[0] - dest[0];
+    let dc = piece.position[1] - dest[1];
+    if (dr != 0 || dc != 0) piece.moved = true;
+    // special move cases
+    switch (piece.type.toLowerCase()) {
+        case 'k':
+            let rook = (dc > 0) ? getSquarePiece(getSquare(piece.position[0], 0)) : getSquarePiece(getSquare(piece.position[0], 7));
+            let move = (dc > 0) ? 3 : 7-2;
+            movePiece(rook, getSquare(piece.position[0], move), true, true);
+            break;
+        case 'p':
+            if (Math.abs(dr) == 2) piece.leap = CURR_PLY;
+            if (Math.abs(dr) == 1 && Math.abs(dc) == 1 && !eval(elem.dataset.occupied)) {
+                let pawn = getSquarePiece(getSquare(piece.position[0], piece.position[1] - dc));
+                pawn.hide();
+            }
+            break;
+    }
     if (eval(elem.dataset.occupied) && eval(elem.dataset.side) != piece.side)
         getSquarePiece(elem).hide();
     piece.setPosition(elem.dataset['row'], elem.dataset['col'], true);
-    endMove();
+
+    endMove(dr == 0 && dc == 0 || noply);
 }
 
 function makeMove(fr, fc, tr, tc) {
