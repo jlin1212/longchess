@@ -1,0 +1,101 @@
+* {
+  padding: 0;
+  margin: 0;
+  user-select: none;
+}
+
+body {
+  background-color: #eee;
+}
+
+#board {
+  display: flex;
+  position: relative;
+  top: 80px;
+  flex-direction: column;
+  margin-bottom: 80px;
+}
+
+.piece {
+  position: absolute;
+  display: inline-block;
+  top: 0; left: 0;
+  color: transparent;
+  background-image: url('/images/pieces.png');
+  background-size: 600%;
+  height: 70px;
+  width: 70px;
+  cursor: pointer;
+}
+
+.piece.other, .piece.ui-draggable-disabled {
+  cursor: default;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+}
+
+.square {
+  display: block;
+  height: 70px;
+  width: 70px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.square.dark {
+  background-color: green;
+}
+
+.square.light {
+  background-color: peachpuff;
+}
+
+.square.available {
+  cursor: pointer;
+}
+
+.square.available:hover::after {
+  content: "";
+  position: absolute;
+  height: 100%; width: 100%;
+  top: 0; left: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.square.available::before {
+  content: "";
+  display: block;
+  height: 15px;
+  width: 15px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.label {
+  font-family: "Arial";
+  font-size: 8pt;
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  font-weight: bold;
+}
+
+.label.number {
+  top: 2px;
+  right: 2px !important;
+  left: revert;
+}
+
+.label.dark {
+  color: green;
+}
+
+.label.light {
+  color: peachpuff;
+}
