@@ -5,6 +5,8 @@
  */
 
 var app = require('../app');
+const WebSocket = require('ws');
+const crypto = require('crypto');
 var debug = require('debug')('long-chess:server');
 var http = require('http');
 
@@ -20,6 +22,59 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+
+/**
+ * Session class
+ */
+class Session {
+  constructor(sessionId, initSide) {
+    this.sessionId = sessionId;
+    this.initSide = initSide;
+    this.currMove = 1;
+    this.players = 1;
+  }
+}
+
+/**
+ * WebSocket setup
+ */
+const wss = new WebSocket.Server({ server });
+var SESSIONS = {}
+
+wss.on('connection', (ws) => {
+  ws.on('message', msg => {
+    msgData = JSON.parse(msg);
+    switch (msgData.type) {
+      case 'connect':
+        let success = false;
+        let sessionId = null;
+        let assignedSide = -1;
+
+        if (msgData.code === null) {
+          sessionId = crypto.createHash('shake256', { outputLength: 3 }).update(Date.now().toString()).digest('hex');
+          assignedSide = Math.floor(Math.random() * 2);
+
+          SESSIONS[sessionId] = new Session(sessionId, assignedSide);
+
+          console.log(`Created new session with ID ${sessionId}.`);
+          success = true;
+        } else {
+          if (SESSIONS[msgData.code] != null && SESSIONS[msgData.code].players < 2) {
+            sessionId = msgData.code;
+            assignedSide = 1 - SESSIONS[msgData.code].initSide;
+            SESSIONS[msgData.code].players++;
+            console.log(`Connected to existing session ${msgData.code}.`);
+            success = true;
+          } else {
+            console.log(`User attempted to connect to invalid session ${msgData.code}`);
+          }
+        }
+
+        if (success) ws.send(JSON.stringify({ type: 'id', content: sessionId, side: assignedSide }));
+        else ws.send(JSON.stringify({ type: 'id', content: null }));
+    }
+  });
+});
 
 /**
  * Listen on provided port, on all network interfaces.

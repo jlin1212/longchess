@@ -1,4 +1,4 @@
-ROWS = 8
+ROWS = 6
 
 START = ['rnbqkbnr/pppppppp', 'PPPPPPPP/RNBQKBNR'];
 SIDES = []
@@ -25,20 +25,67 @@ CURR_MOVE = 1
 CURR_PLY = 0
 CURR_PIECE = null
 
+SESSION = null;
+SESSION_ID = null;
+
 $(function() {
     // generate squares
     for (var i = 0; i < ROWS; i++) {
         $('#board').append('<div class="row"></div>')
         for (var j = 0; j < 8; j++) {
             var color = ((i % 2) + j) % 2;
-            $('#board .row:last-of-type').append(`<div class='square ${color == 1 ? 'dark' : 'light'}' data-row=${i} data-col=${j}></div>`);
+            $('#board .row:last-of-type').append(`<div class='square ${color == 1 ? 'dark' : 'light'}'></div>`);
+        }
+    }
+
+    $('#session, #info-bg').click(_ => {
+        $('#session-info').toggle();
+        $(document.body).toggleClass('no-scroll');
+    });
+
+    $('#connect').click(evt => {
+        SESSION = new WebSocket('ws://localhost:3000/');
+        
+        SESSION.onopen = function(evt) {
+            let code = $('#session-code').val().trim();
+            SESSION.send(JSON.stringify({
+                type: 'connect',
+                code: code.length > 0 ? code : null
+            }));
+        };
+        
+        SESSION.onmessage = function(evt) {
+            msg = JSON.parse(evt.data);
+            switch(msg.type) {
+                case 'id':
+                    if (msg.content != null) {
+                        SESSION_ID = msg.content;
+                        CURR_SIDE = msg.side;
+                        populateBoard();
+                        $('#session-id').html(`Your current session ID is <span class='session-label'>${SESSION_ID}</span>`);
+                        $('#connect-controls').hide();
+                    } else {
+                        alert('That session ID was invalid.');
+                    }
+            }
+        };
+    })
+    
+    $(window).resize(() => refreshPositions());
+});
+
+function populateBoard() {
+    // data labelling squares
+    for (var i = 0; i < ROWS; i++) {
+        for (var j = 0; j < 8; j++) {
+            $(getSquare(i,j)).attr('data-row', i).attr('data-col', j);
         }
     }
 
     // label squares
     for (var i = 0; i < ROWS; i++) {
         var color = 1 - (((i % 2) + ROWS-1) % 2);
-        $(getSquare(i,7)).append(`<div class='label number ${color == 1 ? 'dark' : 'light'}'>${ROWS-i}</div>`)
+        $(getSquare(i,7)).append(`<div class='label number ${color == 1 ? 'dark' : 'light'} ${CURR_SIDE == 0 ? 'flip' : 'noflip'}'>${ROWS-i}</div>`)
     }
 
     for (var i = 0; i < 8; i++) {
@@ -80,8 +127,8 @@ $(function() {
     $('.piece').not('.other').draggable({ revert: 'invalid', revertDuration: 80 });
 
     // set available squares on click
-    $('.piece').not('.other').mousedown(function() {
-        if (!$(this).hasClass('ui-draggable-disabled')) {
+    $('.piece').mousedown(function() {
+        if (!$(this).hasClass('other') && !$(this).hasClass('ui-draggable-disabled')) {
             let piece = getPiece(this);
             CURR_PIECE = piece;
             clearAvailable();
@@ -95,9 +142,7 @@ $(function() {
             movePiece(CURR_PIECE, this);
         } else clearAvailable();
     });
-    
-    $(window).resize(() => refreshPositions());
-});
+}
 
 class Piece {
     constructor(elem, type, side) {
@@ -146,7 +191,8 @@ class Piece {
     }
 
     moveable() {
-        if (this.side != CURR_SIDE) this.elem.addClass('other')
+        if (this.side != CURR_SIDE || this.side != CURR_MOVE) this.elem.addClass('other');
+        else this.elem.removeClass('other');
     }
 
     getAvailable() {
@@ -201,11 +247,14 @@ function setDragging(bool) {
 }
 
 function endMove(noply) {
-    if (!noply) CURR_PLY++;
-    CURR_MOVE = 1 - CURR_MOVE;
-    CURR_PIECE = null;
-    clearAvailable();
-    console.log(CURR_PLY);
+    if (!noply) {
+        CURR_PLY++;
+        CURR_MOVE = 1 - CURR_MOVE;
+        CURR_PIECE = null;
+        clearAvailable();
+        updatePieces();
+        console.log(CURR_PLY);
+    }
 }
 
 function getCenter(row, col) {
@@ -223,7 +272,9 @@ function getSquarePiece(elem) {
 }
 
 function getSquare(row, col) {
-    return $($('#board .row')[row]).children('.square')[col];
+    let rowIdx = CURR_SIDE == 1 ? row : ROWS - 1 - row;
+    let colIdx = CURR_SIDE == 1 ? col : 8 - 1 - col;
+    return $($('#board .row')[rowIdx]).children('.square')[colIdx];
 }
 
 function getRowCol(elem) {
@@ -380,4 +431,13 @@ function movePiece(piece, elem, noply, nolight) {
 
 function makeMove(fr, fc, tr, tc) {
     movePiece(getSquarePiece(getSquare(fr, fc)), getSquare(tr, tc));
+}
+
+function updatePieces() {
+    PIECES.forEach(piece => piece.moveable());
+}
+
+function updateMove(side) {
+    CURR_MOVE = side;
+    updatePieces();
 }

@@ -2,6 +2,16 @@ extends layout
 
 block content
   center
+    #session Session
+    #session-info
+      #info-bg    
+      #session-pane
+        #session-id You are not currently connected to a session.
+        #connect-controls
+          input#session-code(placeholder='Session Code')
+          button#connect Connect
+          br
+          span(style='font-style: italic') (Leave session code blank if none)
     #board
     #black
     #white

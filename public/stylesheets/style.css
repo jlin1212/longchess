@@ -1,3 +1,7 @@
+.no-scroll {
+  overflow-x: hidden !important;
+}
+
 * {
   padding: 0;
   margin: 0;
@@ -13,7 +17,28 @@ body {
   position: relative;
   top: 80px;
   flex-direction: column;
-  margin-bottom: 80px;
+  margin-bottom: 200px;
+}
+
+#session {
+  border: none;
+  background-color: rgba(139, 0, 0, 0.774);
+  font-weight: bold;
+  font-size: 9pt;
+  position: absolute;
+  top: 0; left: 0;
+  cursor: pointer;
+  color: white;
+  font-family: 'Helvetica';
+  padding: 10px;
+}
+
+#session-info {
+  display: none;
+}
+
+#session:hover {
+  background-color: rgba(139, 0, 0, 0.9);
 }
 
 .piece {
@@ -100,8 +125,15 @@ body {
 
 .label.number {
   top: 2px;
-  right: 2px !important;
   left: revert;
+}
+
+.label.number.noflip {
+  right: 2px !important;
+}
+
+.label.number.flip {
+  left: 2px !important;
 }
 
 .label.dark {
@@ -110,4 +142,44 @@ body {
 
 .label.light {
   color: peachpuff;
+}
+
+#info-bg {
+  position: absolute;
+  height: 100vh; width: 100vw;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 4;
+}
+
+#session-pane {
+  font-family: 'Arial';
+  font-size: 10pt;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.8);
+  background-color: white;
+  z-index: 10;
+}
+
+#connect-control {
+  margin: 10px;
+  padding: 5px;
+}
+
+#connect {
+  margin: 10px;
+  padding: 5px;
+}
+
+#connect-controls input {
+  padding: 10px;
+}
+
+.session-label {
+  color: darkgreen;
+  font-weight: bold;
+  font-size: 12pt;
+  user-select: all;
 }
