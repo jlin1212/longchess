@@ -1,4 +1,4 @@
-ROWS = 6
+ROWS = 8
 
 START = ['rnbqkbnr/pppppppp', 'PPPPPPPP/RNBQKBNR'];
 SIDES = []
@@ -56,6 +56,7 @@ $(function() {
         
         SESSION.onmessage = function(evt) {
             msg = JSON.parse(evt.data);
+            console.log(msg);
             switch(msg.type) {
                 case 'id':
                     if (msg.content != null) {
@@ -67,6 +68,10 @@ $(function() {
                     } else {
                         alert('That session ID was invalid.');
                     }
+                    break;
+                case 'move':
+                    makeMove(msg.fr, msg.fc, msg.tr, msg.tc);
+                    break;
             }
         };
     })
@@ -406,13 +411,28 @@ function movePiece(piece, elem, noply, nolight) {
     let dest = getRowCol(elem);
     let dr = piece.position[0] - dest[0];
     let dc = piece.position[1] - dest[1];
-    if (dr != 0 || dc != 0) piece.moved = true;
+
+    if (!noply && !nolight && dr != 0 || dc != 0) {
+        piece.moved = true;
+        SESSION.send(JSON.stringify({
+            type: 'move',
+            sessionId: SESSION_ID,
+            side: CURR_SIDE,
+            fr: piece.position[0], 
+            fc: piece.position[1],
+            tr: dest[0],
+            tc: dest[1]
+        }));
+    }
+
     // special move cases
     switch (piece.type.toLowerCase()) {
         case 'k':
-            let rook = (dc > 0) ? getSquarePiece(getSquare(piece.position[0], 0)) : getSquarePiece(getSquare(piece.position[0], 7));
-            let move = (dc > 0) ? 3 : 7-2;
-            movePiece(rook, getSquare(piece.position[0], move), true, true);
+            if (Math.abs(dc) == 2) {
+                let rook = (dc > 0) ? getSquarePiece(getSquare(piece.position[0], 0)) : getSquarePiece(getSquare(piece.position[0], 7));
+                let move = (dc > 0) ? 3 : 7-2;
+                movePiece(rook, getSquare(piece.position[0], move), true, true);
+            }
             break;
         case 'p':
             if (Math.abs(dr) == 2) piece.leap = CURR_PLY;

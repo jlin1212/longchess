@@ -32,6 +32,7 @@ class Session {
     this.initSide = initSide;
     this.currMove = 1;
     this.players = 1;
+    this.sockets = { 0: null, 1: null };
   }
 }
 
@@ -70,8 +71,15 @@ wss.on('connection', (ws) => {
           }
         }
 
-        if (success) ws.send(JSON.stringify({ type: 'id', content: sessionId, side: assignedSide }));
+        if (success) {
+          ws.send(JSON.stringify({ type: 'id', content: sessionId, side: assignedSide }));
+          SESSIONS[sessionId].sockets[assignedSide] = ws;
+        }
         else ws.send(JSON.stringify({ type: 'id', content: null }));
+        break;
+      case 'move':
+        SESSIONS[msgData.sessionId].sockets[1-msgData.side].send(JSON.stringify(msgData));
+        break;
     }
   });
 });
