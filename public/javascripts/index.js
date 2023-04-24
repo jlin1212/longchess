@@ -19,6 +19,7 @@ POSITIONS = {
 PIECES = []
 BLACK = []
 WHITE = []
+WS_URL = 'localhost:3000'
 
 CURR_SIDE = 1
 CURR_MOVE = 1
@@ -44,7 +45,7 @@ $(function() {
     });
 
     $('#connect').click(evt => {
-        SESSION = new WebSocket('ws://localhost:3000/');
+        SESSION = new WebSocket(`ws://${WS_URL}/`);
         
         SESSION.onopen = function(evt) {
             let code = $('#session-code').val().trim();
