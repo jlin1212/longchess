@@ -78,11 +78,10 @@ $(function() {
                     break;
                 case 'move':
                     makeMove(msg.fr, msg.fc, msg.tr, msg.tc);
-                    break;
-                case 'promote':
-                    target = getSquarePiece(getSquare(msg.tr, msg.tc));
-                    target.type = msg.to;
-                    target.sprite();
+                    if (msg.to != null) {
+                        PIECES[msg.idx].type = msg.to;
+                        PIECES[msg.idx].sprite();
+                    }
                     break;
                 case 'start':
                     STARTED = true
@@ -430,18 +429,7 @@ function movePiece(piece, elem, noply, nolight) {
     let dr = piece.position[0] - dest[0];
     let dc = piece.position[1] - dest[1];
 
-    if (!noply && !nolight && dr != 0 || dc != 0) {
-        piece.moved = true;
-        SESSION.send(JSON.stringify({
-            type: 'move',
-            sessionId: SESSION_ID,
-            side: CURR_SIDE,
-            fr: piece.position[0], 
-            fc: piece.position[1],
-            tr: dest[0],
-            tc: dest[1]
-        }));
-    }
+    let targetType = null;
 
     // special move cases
     switch (piece.type.toLowerCase()) {
@@ -458,30 +446,41 @@ function movePiece(piece, elem, noply, nolight) {
                 let pawn = getSquarePiece(getSquare(piece.position[0], piece.position[1] - dc));
                 pawn.hide();
             }
-            if (dest[0] == 0 && piece.side == 1 || dest[0] == ROWS - 1 && piece.side == 0) {
+            if (piece.side == CURR_SIDE && dest[0] == 0 && piece.side == 1 || dest[0] == ROWS - 1 && piece.side == 0) {
                 targetType = '';
-                while (['p', 'q', 'n', 'b', 'r'].indexOf(targetType) == -1) {
-                    targetType = prompt('Enter piece type (p, q, n, b, r)').toLowerCase();
-                    targetType = piece.side == 1 ? targetType.toUpperCase() : targetType;
+                while (['q', 'n', 'b', 'r'].indexOf(targetType) == -1) {
+                    targetType = prompt('Enter piece type (n, b, r, q)').trim().toLowerCase();
+                    console.log(targetType, ['q', 'n', 'b', 'r'].indexOf(targetType));
                 }
+                targetType = piece.side == 1 ? targetType.toUpperCase() : targetType;
                 piece.type = targetType;
                 piece.sprite();
-                SESSION.send(JSON.stringify({
-                    type: 'promote',
-                    sessionId: SESSION_ID,
-                    side: CURR_SIDE,
-                    to: targetType,
-                    tr: dest[0],
-                    tc: dest[1]
-                }));
             }
             break;
     }
+
+    if (!noply && !nolight && dr != 0 || dc != 0) {
+        piece.moved = true;
+        SESSION.send(JSON.stringify({
+            type: 'move',
+            sessionId: SESSION_ID,
+            side: CURR_SIDE,
+            to: targetType,
+            idx: piece.index,
+            fr: piece.position[0], 
+            fc: piece.position[1],
+            tr: dest[0],
+            tc: dest[1]
+        }));
+    }
+
     if (eval(elem.dataset.occupied) && eval(elem.dataset.side) != piece.side)
         getSquarePiece(elem).hide();
     piece.setPosition(elem.dataset['row'], elem.dataset['col'], true);
 
     endMove(dr == 0 && dc == 0 || noply);
+
+    return piece;
 }
 
 function makeMove(fr, fc, tr, tc) {
