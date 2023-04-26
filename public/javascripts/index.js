@@ -215,7 +215,7 @@ class Piece {
     moveable() {
         if (!STARTED || this.side != CURR_SIDE || this.side != CURR_MOVE) this.elem.addClass('other');
         else this.elem.removeClass('other');
-        this.elem.removeClass('other');
+        // this.elem.removeClass('other');
     }
 
     getAvailable() {
