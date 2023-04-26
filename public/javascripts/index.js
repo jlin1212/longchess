@@ -458,30 +458,23 @@ function movePiece(piece, elem, noply, nolight) {
                 let pawn = getSquarePiece(getSquare(piece.position[0], piece.position[1] - dc));
                 pawn.hide();
             }
-            if (dest[0] == 0 && piece.side == 1) {
-                piece.type = 'Q';
+            if (dest[0] == 0 && piece.side == 1 || dest[0] == ROWS - 1 && piece.side == 0) {
+                targetType = '';
+                while (['p', 'q', 'n', 'b', 'r'].indexOf(targetType) == -1) {
+                    targetType = prompt('Enter piece type (p, q, n, b, r)').toLowerCase();
+                    targetType = piece.side == 1 ? targetType.toUpperCase() : targetType;
+                }
+                piece.type = targetType;
                 piece.sprite();
                 SESSION.send(JSON.stringify({
                     type: 'promote',
                     sessionId: SESSION_ID,
                     side: CURR_SIDE,
-                    to: 'Q',
+                    to: targetType,
                     tr: dest[0],
                     tc: dest[1]
                 }));
             }
-            if (dest[0] == ROWS - 1 && piece.side == 0) {
-                piece.type = 'q';
-                piece.sprite();
-                SESSION.send(JSON.stringify({
-                    type: 'promote',
-                    sessionId: SESSION_ID,
-                    side: CURR_SIDE,
-                    to: 'q',
-                    tr: dest[0],
-                    tc: dest[1]
-                }));
-            } 
             break;
     }
     if (eval(elem.dataset.occupied) && eval(elem.dataset.side) != piece.side)
