@@ -18,3 +18,4 @@ to make your instance available to others. Once this is in place, just do the fo
 There should be a long list of global variables; find the one called `WS_URL`.
 3. By default, `WS_URL = localhost:3000`; you'll want to change this to the address of whatever server you're running this on. It should be whatever address
 other people would use to access your instance; for example, if your instance is accessible at "http://www.chong.com', you'd set `WS_URL = chong.com`.
+4. You may also need to modify `WS_PROTOCOL` to `wss` or `ws` depending on whether your server is HTTPS or HTTP respectively.
