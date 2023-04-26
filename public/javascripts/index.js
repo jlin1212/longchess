@@ -1,6 +1,7 @@
 ROWS = 8
 
 START = ['rnbqkbnr/pppppppp', 'PPPPPPPP/RNBQKBNR'];
+// START = ['rrrrkrrr/pppppppp', 'PPPPPPPP/RRRRKRRR'];
 SIDES = []
 POSITIONS = {
     'K': [0,0],
@@ -19,12 +20,17 @@ POSITIONS = {
 PIECES = []
 BLACK = []
 WHITE = []
+
+WS_URL = '7c85-129-2-192-187.ngrok-free.app'
 WS_URL = 'localhost:3000'
+WS_PROTOCOL = 'wss'
+WS_PROTOCOL = 'ws'
 
 CURR_SIDE = 1
 CURR_MOVE = 1
 CURR_PLY = 0
 CURR_PIECE = null
+STARTED = false
 
 SESSION = null;
 SESSION_ID = null;
@@ -45,7 +51,7 @@ $(function() {
     });
 
     $('#connect').click(evt => {
-        SESSION = new WebSocket(`ws://${WS_URL}/`);
+        SESSION = new WebSocket(`${WS_PROTOCOL}://${WS_URL}/`);
         
         SESSION.onopen = function(evt) {
             let code = $('#session-code').val().trim();
@@ -72,6 +78,16 @@ $(function() {
                     break;
                 case 'move':
                     makeMove(msg.fr, msg.fc, msg.tr, msg.tc);
+                    break;
+                case 'promote':
+                    target = getSquarePiece(getSquare(msg.tr, msg.tc));
+                    target.type = msg.to;
+                    target.sprite();
+                    break;
+                case 'start':
+                    STARTED = true
+                    $('#session').css('background-color', 'darkgreen');
+                    updatePieces();
                     break;
             }
         };
@@ -197,8 +213,9 @@ class Piece {
     }
 
     moveable() {
-        if (this.side != CURR_SIDE || this.side != CURR_MOVE) this.elem.addClass('other');
+        if (!STARTED || this.side != CURR_SIDE || this.side != CURR_MOVE) this.elem.addClass('other');
         else this.elem.removeClass('other');
+        this.elem.removeClass('other');
     }
 
     getAvailable() {
@@ -441,6 +458,30 @@ function movePiece(piece, elem, noply, nolight) {
                 let pawn = getSquarePiece(getSquare(piece.position[0], piece.position[1] - dc));
                 pawn.hide();
             }
+            if (dest[0] == 0 && piece.side == 1) {
+                piece.type = 'Q';
+                piece.sprite();
+                SESSION.send(JSON.stringify({
+                    type: 'promote',
+                    sessionId: SESSION_ID,
+                    side: CURR_SIDE,
+                    to: 'Q',
+                    tr: dest[0],
+                    tc: dest[1]
+                }));
+            }
+            if (dest[0] == ROWS - 1 && piece.side == 0) {
+                piece.type = 'q';
+                piece.sprite();
+                SESSION.send(JSON.stringify({
+                    type: 'promote',
+                    sessionId: SESSION_ID,
+                    side: CURR_SIDE,
+                    to: 'q',
+                    tr: dest[0],
+                    tc: dest[1]
+                }));
+            } 
             break;
     }
     if (eval(elem.dataset.occupied) && eval(elem.dataset.side) != piece.side)

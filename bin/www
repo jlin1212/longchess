@@ -74,10 +74,16 @@ wss.on('connection', (ws) => {
         if (success) {
           ws.send(JSON.stringify({ type: 'id', content: sessionId, side: assignedSide }));
           SESSIONS[sessionId].sockets[assignedSide] = ws;
+          if (SESSIONS[sessionId].players == 2) {
+            for (var i = 0; i < 2; i++) {
+              SESSIONS[sessionId].sockets[i].send(JSON.stringify({ type: 'start' }))
+            }
+          }
         }
         else ws.send(JSON.stringify({ type: 'id', content: null }));
         break;
       case 'move':
+      case 'promote':
         SESSIONS[msgData.sessionId].sockets[1-msgData.side].send(JSON.stringify(msgData));
         break;
     }

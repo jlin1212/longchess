@@ -9,7 +9,7 @@
 }
 
 body {
-  background-color: #eee;
+  background-color: #222;
 }
 
 #board {
@@ -26,6 +26,7 @@ body {
   font-weight: bold;
   font-size: 9pt;
   position: absolute;
+  text-transform: uppercase;
   top: 0; left: 0;
   cursor: pointer;
   color: white;
@@ -83,11 +84,11 @@ body {
 }
 
 .square.dark {
-  background-color: green;
+  background-color: #769656;
 }
 
 .square.light {
-  background-color: peachpuff;
+  background-color: #eeeed2;
 }
 
 .square.available {
@@ -137,11 +138,11 @@ body {
 }
 
 .label.dark {
-  color: green;
+  color: #769656;
 }
 
 .label.light {
-  color: peachpuff;
+  color: #eeeed2;
 }
 
 #info-bg {
